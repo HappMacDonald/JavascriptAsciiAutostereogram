@@ -1,0 +1,150 @@
+<!doctype html5>
+<html>
+  <head>
+    <title>Ascii Stereogram Generator Thing</title>
+    <script type='text/javascript' src='passphrasedict.js'></script>
+    <script>
+
+window.dict = window.dict.concat("ad","ah","am","an","as","at","be","by","do","eh","go","ha","he","hi","ho","id","if","in","is","it","la","lo","ma","me","mi","mu","my","no","of","oh","on","or","ow","ox","pa","pi","so","to","uh","um","up","us","vs","we","yo","i","a"); // original list lacked 2 letter words
+
+window.parallax = 15;
+
+window.message = [
+  ["",0],
+  ["",0],
+  ["",0],
+  ["",0],
+  ["",0],
+  ["",0],
+  ["stop", 34],
+  ["wasting", 35],
+  ["your", 37],
+  ["time", 38],
+  ["",0],
+  ["get", 60],
+  ["a", 62],
+  ["life", 63],
+  ["",0],
+  ["",0],
+  ["",0],
+  ["",0],
+  ["",0],
+  ["",0],
+  ["",0],
+  ["",0],
+  ["",0],
+];
+
+// choose random integer R where min <= R < max
+function irand(min, max) { return( Math.floor( Math.random() * (max-min)) + min); }
+function arand(ar) { return(ar[irand(0, ar.length)]); }
+
+window.bylength = [];
+window.leftpairs = [];
+window.rightpairs = [];
+for(i in dict)
+{
+  var word = dict[i];
+  if(bylength[parseInt(word.length)]==null) { bylength[parseInt(word.length)] = []; }
+  bylength[parseInt(word.length)].push(word);
+}
+
+for(length in bylength)
+{
+  length = parseInt(length);
+  for(i in bylength[length])
+  {
+    var short = bylength[length][i];
+    for(j in bylength[length+1])
+    {
+      var long = bylength[length+1][j];
+      if(long.indexOf(short)==0)
+      {
+        if(leftpairs[length]==null) { leftpairs[length] = []; }
+        leftpairs[length].push([short, long]);
+      } else if(long.indexOf(short)==1)
+      {
+        if(rightpairs[length]==null) { rightpairs[length] = []; }
+        rightpairs[length].push([short, long]);
+      }
+    }
+  }
+}
+
+function render()
+{
+  var output = '';
+  for(i=0; i<23; i++)
+  {
+    var rowStuff;
+    message[i][0] = document.forms.aFrm["message"+i].value;
+    message[i][1] = document.forms.aFrm["offset"+i].value;
+  
+    if(message[i]==null || message[i][0].length<1)
+    {
+      var str = "";
+  
+      while(str.length < parallax)
+      {
+        var chunk = irand(1, parallax - str.length);
+        if((chunk < (parallax - str.length - 1)) && (chunk > (parallax - str.length - 3))) { continue; }
+        if(bylength[chunk]==null) { continue; }
+        str += arand(bylength[chunk]) +" ";
+      }
+    
+      rowStuff = [irand(0, parallax), str, 0, str];
+    } else {
+      if(parallax - message[i][0].length < 6)
+      {
+        alert("Cannot encode: parallax = "+ parallax +", so longest possible foreground word must be "+ (parallax-6) +" or fewer characters long.\n"+
+          "'"+ message[i][0] +"' looks too long, at "+ message[i][0].length +" characters.");
+        break;
+      }
+      do {
+        var leftLen  = irand(1, parallax - message[i][0].length - 5);
+        var rightLen = parallax - message[i][0].length - leftLen - 4;
+      } while(!(leftpairs[leftLen]!=null && rightpairs[rightLen]!=null));
+      var left     = arand(leftpairs[leftLen]);
+      var right    = arand(rightpairs[rightLen]);
+      var str1     = left[0] +" "+ message[i][0] +" "+ right[1] +" ";
+      var str2     = left[1] +" "+ message[i][0] +" "+ right[0] +" ";
+
+      rowStuff = [leftLen - message[i][1]%parallax + parallax, str1, message[i][1] - leftLen, str2];
+    }
+
+//  output += "("+ rowStuff[0] +") ";
+    for(j=0; j<79; j++)
+    {
+      var str = (j>=rowStuff[2])?rowStuff[1]:rowStuff[3];
+//      if(j==rowStuff[2]) { output += "\u25A0"; }
+      output += str[(j+rowStuff[0])%15];
+    }
+    output += "<br>\n";
+  }
+
+  document.getElementById("output").innerHTML = output;
+}
+
+    </script>
+    <style>
+#output {border: 2px inset #666; font-family: monospace; whitespace: no-wrap; display: inline-block; padding: 12px 15px; }
+p {padding: 0; margin: 0; }
+.offset { width: 25px; }
+.message { width: 100px; }
+    </style>
+  </head>
+  <body>
+    <div id='output'></div>
+    <form name='aFrm' id='aFrm' action="javascript:render(); void(0); //" method="get">
+<script>
+for(var i=0; i<23; i++)
+{
+  document.writeln("<p><input type='text' maxlength='2' class='offset' name='offset"+ i +"' value='"+ message[i][1] +"'> "+
+      "<input type='text' maxlength='9' class='message' name='message"+ i +"' value='"+ message[i][0] +"'></p>");
+}
+</script>
+      <button type='submit'>Render</button>
+    </form>
+    <script>render()</script>
+  </body>
+</html>
