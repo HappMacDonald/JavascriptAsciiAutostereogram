@@ -77,8 +77,8 @@ function render()
   for(i=0; i<23; i++)
   {
     var rowStuff;
-    message[i][0] = document.forms.aFrm["message"+i].value;
-    message[i][1] = document.forms.aFrm["offset"+i].value;
+    message[i][0] = document.forms.aFrm["message"+i].value.trim();
+    message[i][1] = parseInt(document.forms.aFrm["offset"+i].value);
   
     if(message[i]==null || message[i][0].length<1)
     {
@@ -117,7 +117,7 @@ function render()
     {
       var str = (j>=rowStuff[2])?rowStuff[1]:rowStuff[3];
 //      if(j==rowStuff[2]) { output += "\u25A0"; }
-      output += str[(j+rowStuff[0])%15];
+      output += str[(j+rowStuff[0])%parallax];
     }
     output += "<br>\n";
   }
