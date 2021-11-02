@@ -9,6 +9,30 @@ window.dict = window.dict.concat("ad","ah","am","an","as","at","be","by","do","e
 
 window.parallax = 15;
 
+window.darkLightData =
+{ true:
+  { "label": "Switch to Dark Mode 🌛"
+  , "background": "white"
+  , "color": "black"
+  }
+, false:
+  { "label": "Switch to Light Mode 🌞"
+  , "background": "black"
+  , "color": "white"
+  }
+}
+
+window.modesData =
+{ "words":
+  { "label": "Words"
+  , "panel": "wordsPanel"
+  }
+, "characters":
+  { "label": "Characters"
+  , "panel": "charactersPanel"
+  }
+}
+
 window.message =
 [ ["",0],
   ["",0],
@@ -38,6 +62,13 @@ window.message =
 // choose random integer R where min <= R < max
 function irand(min, max) { return( Math.floor( Math.random() * (max-min)) + min); }
 function arand(ar) { return(ar[irand(0, ar.length)]); }
+function arandMulti(ar, length)
+{ let ret = '';
+  while(length-->0)
+  { ret += arand(ar);
+  }
+  return ret;
+}
 
 window.bylength = [];
 window.leftpairs = [];
@@ -65,8 +96,25 @@ for(length in bylength)
   }
 }
 
+function init()
+{ let styleSheet = document.styleSheets[document.styleSheets.length - 1];
+  styleSheet.insertRule("* {}", 0);
+  window.universal = styleSheet.cssRules[0];
+  render();
+}
+
 function render()
 { let output = '';
+  const mode = document.aFrm.modeSelect.value;
+  let messageDelimiter = mode=="words"?" ":"";
+  let characterChoices = document.aFrm.characterChoices.value.split('');
+  setDarkLightMode();
+  setModePanel();
+
+  if(characterChoices.length<1)
+  { characterChoices = [' '];
+  }
+
   for(i=0; i<23; i++)
   { let rowStuff;
     message[i][0] = document.forms.aFrm["message"+i].value.trim();
@@ -75,11 +123,16 @@ function render()
     if(message[i]==null || message[i][0].length<1)
     { let str = "";
   
-      while(str.length < parallax)
-      { let chunk = irand(1, parallax - str.length);
-        if((chunk < (parallax - str.length - 1)) && (chunk > (parallax - str.length - 3))) { continue; }
-        if(bylength[chunk]==null) { continue; }
-        str += arand(bylength[chunk]) +" ";
+      if(mode=="words")
+      { while(str.length < parallax)
+        { let chunk = irand(1, parallax - str.length);
+          if((chunk < (parallax - str.length - 1)) && (chunk > (parallax - str.length - 3))) { continue; }
+          if(bylength[chunk]==null) { continue; }
+          str += arand(bylength[chunk]) +" ";
+        }
+      }
+      else // mode==characters
+      { str = arandMulti(characterChoices, parallax);
       }
     
       rowStuff = [irand(0, parallax), str, 0, str];
@@ -87,16 +140,8 @@ function render()
     else
     { if(parallax - message[i][0].length < 6)
       { alert
-        ( "Cannot encode: parallax = "
-        + parallax
-        + ", so longest possible foreground word must be "
-        + (parallax-6)
-        + " or fewer characters long.\n"
-        + "'"
-        + message[i][0]
-        + "' looks too long, at "
-        + message[i][0].length
-        + " characters."
+        ( `Cannot encode: parallax = ${parallax}, so longest possible foreground word must be ${parallax-6} or fewer characters long.\n`
+        + `'${message[i][0]}' looks too long, at ${message[i][0].length} characters.`
         );
         break;
       }
@@ -105,14 +150,31 @@ function render()
       do
       { leftLen  = irand(1, parallax - message[i][0].length - 5);
         rightLen = parallax - message[i][0].length - leftLen - 4;
+      } while(!(leftpairs[leftLen]!=null && rightpairs[rightLen]!=null));
+
+      let left, right, str1, str2;
+      if(mode=="words")
+      { left = arand(leftpairs[leftLen]);
+        right = arand(rightpairs[rightLen]);
       }
-      while(!(leftpairs[leftLen]!=null && rightpairs[rightLen]!=null));
-      let left     = arand(leftpairs[leftLen]);
-      let right    = arand(rightpairs[rightLen]);
-      let str1     = left[0] +" "+ message[i][0] +" "+ right[1] +" ";
-      let str2     = left[1] +" "+ message[i][0] +" "+ right[0] +" ";
+      else // mode==characters
+      { // using len+1 and len+2 to account for missing delimiter
+        // AND shifted parallax.
+        left =
+          [ arandMulti(characterChoices, leftLen+2)
+          , arandMulti(characterChoices, leftLen+3)
+          ];
+        right =
+          [ arandMulti(characterChoices, rightLen+2)
+          , arandMulti(characterChoices, rightLen+3)
+          ];
+      }
+
+      str1 = [left[0], message[i][0], right[1], ''].join(messageDelimiter);
+      str2 = [left[1], message[i][0], right[0], ''].join(messageDelimiter);
 
       rowStuff = [leftLen - message[i][1]%parallax + parallax, str1, message[i][1] - leftLen, str2];
+console.log(rowStuff, leftLen, rightLen);
     }
 
 //  output += "("+ rowStuff[0] +") ";
@@ -121,10 +183,37 @@ function render()
 //      if(j==rowStuff[2]) { output += "\u25A0"; }
       output += str[(j+rowStuff[0])%parallax];
     }
-    output += "<br>\n";
+    output += "\n";
   }
 
   document.getElementById("output").innerHTML = output;
+}
+
+function setDarkLightMode(pressed=false)
+{ let button = document.getElementById('darkLightModeButton');
+  let isDark = button.innerText == darkLightData[true].label;
+  if(pressed)
+  { isDark = ! isDark; }
+
+  button.innerText = darkLightData[isDark].label;
+  universal.style.background = darkLightData[isDark].background;
+  universal.style.color = darkLightData[isDark].color;
+}
+
+function setModePanel()
+{ const mode = document.aFrm.modeSelect.value;
+  for(const panelIndex in modesData)
+  { const panel = document.getElementById(modesData[panelIndex].panel);
+    panel.style.display = (mode == panelIndex)?"block":"none";
+  }
+}
+
+function characterChoicesSet(newCharacters)
+{ document.aFrm.characterChoices.value = newCharacters;
+}
+
+function characterChoicesAdd(newCharacters)
+{ characterChoicesSet(document.aFrm.characterChoices.value + newCharacters);
 }
 
     </script>
@@ -133,10 +222,16 @@ function render()
 p {padding: 0; margin: 0; }
 .offset { width: 25px; }
 .message { width: 100px; }
+#darkLightModeButton { font-size: 10pt; width: 200px; }
     </style>
   </head>
-  <body>
-    <div id='output'></div>
+  <body onLoad='init()'>
+    <p>
+      <button id='darkLightModeButton' onClick='setDarkLightMode(true)'>
+        <script>document.write(darkLightData[true].label);</script>
+      </button>
+    </p>
+    <pre id='output'></pre>
     <form name='aFrm' id='aFrm' action="javascript:render(); void(0); //" method="get">
 <script>
 for(let i=0; i<23; i++)
@@ -144,8 +239,36 @@ for(let i=0; i<23; i++)
       "<input type='text' maxlength='9' class='message' name='message"+ i +"' value='"+ message[i][0] +"'></p>");
 }
 </script>
+      <p>
+        <label for="modeSelect">Mode:
+        <select id="modeSelect" name="modeSelect" onChange="render()">
+<script>
+  for(const mode in modesData)
+  { document.writeln(`<option value=${mode}>${modesData[mode].label}</option>`);
+  }
+</script>
+        </select>
+        </label>
+      </p>
+      <p id="wordsPanel">
+        
+      </p>
+      <p id="charactersPanel">
+        Warning: Unicode symbols may harm illusion unless you confirm they render as exactly the same width as ascii characters do in this font.<br><br>
+        <label for="characterChoices">
+          Character Choices:
+          <input id="characterChoices" name="characterChoices" type="text" value=""><br><br>
+          <button onClick="characterChoicesSet('')">Clear</button><br>
+          <button onClick="characterChoicesAdd(' ')">Add Space</button><br>
+          <button onClick="characterChoicesAdd('ABCDEFGHIJKLMNOPQRSTUVWXYZ')">Add All Uppercase Letters</button><br>
+          <button onClick="characterChoicesAdd('abcdefghijklmnopqrstuvwxyz')">Add All Lowercase Letters</button><br>
+          <button onClick="characterChoicesAdd('0123456789')">Add All Decimal Digits</button><br>
+          <button onClick="characterChoicesAdd('0123456789ABCDEFG')">Add All Hexidecimal Digits</button><br>
+          <button onClick="characterChoicesAdd('01')">Add All Binary Digits</button><br>
+          <button onClick="characterChoicesAdd('!&quot;#$%&&apos;()*+,-./:;&lt;=&gt;?@[\]^_`{|}~')">Add All Printable Ascii Symbols</button><br>
+        </label>
+      </p><br>
       <button type='submit'>Render</button>
     </form>
-    <script>render()</script>
   </body>
 </html>
