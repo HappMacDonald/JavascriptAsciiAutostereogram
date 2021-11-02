@@ -9,8 +9,8 @@ window.dict = window.dict.concat("ad","ah","am","an","as","at","be","by","do","e
 
 window.parallax = 15;
 
-window.message = [
-  ["",0],
+window.message =
+[ ["",0],
   ["",0],
   ["",0],
   ["",0],
@@ -43,28 +43,22 @@ window.bylength = [];
 window.leftpairs = [];
 window.rightpairs = [];
 for(i in dict)
-{
-  var word = dict[i];
+{ let word = dict[i];
   if(bylength[parseInt(word.length)]==null) { bylength[parseInt(word.length)] = []; }
   bylength[parseInt(word.length)].push(word);
 }
 
 for(length in bylength)
-{
-  length = parseInt(length);
+{ length = parseInt(length);
   for(i in bylength[length])
-  {
-    var short = bylength[length][i];
+  { let short = bylength[length][i];
     for(j in bylength[length+1])
-    {
-      var long = bylength[length+1][j];
+    { let long = bylength[length+1][j];
       if(long.indexOf(short)==0)
-      {
-        if(leftpairs[length]==null) { leftpairs[length] = []; }
+      { if(leftpairs[length]==null) { leftpairs[length] = []; }
         leftpairs[length].push([short, long]);
       } else if(long.indexOf(short)==1)
-      {
-        if(rightpairs[length]==null) { rightpairs[length] = []; }
+      { if(rightpairs[length]==null) { rightpairs[length] = []; }
         rightpairs[length].push([short, long]);
       }
     }
@@ -72,50 +66,58 @@ for(length in bylength)
 }
 
 function render()
-{
-  var output = '';
+{ let output = '';
   for(i=0; i<23; i++)
-  {
-    var rowStuff;
+  { let rowStuff;
     message[i][0] = document.forms.aFrm["message"+i].value.trim();
     message[i][1] = parseInt(document.forms.aFrm["offset"+i].value);
   
     if(message[i]==null || message[i][0].length<1)
-    {
-      var str = "";
+    { let str = "";
   
       while(str.length < parallax)
-      {
-        var chunk = irand(1, parallax - str.length);
+      { let chunk = irand(1, parallax - str.length);
         if((chunk < (parallax - str.length - 1)) && (chunk > (parallax - str.length - 3))) { continue; }
         if(bylength[chunk]==null) { continue; }
         str += arand(bylength[chunk]) +" ";
       }
     
       rowStuff = [irand(0, parallax), str, 0, str];
-    } else {
-      if(parallax - message[i][0].length < 6)
-      {
-        alert("Cannot encode: parallax = "+ parallax +", so longest possible foreground word must be "+ (parallax-6) +" or fewer characters long.\n"+
-          "'"+ message[i][0] +"' looks too long, at "+ message[i][0].length +" characters.");
+    }
+    else
+    { if(parallax - message[i][0].length < 6)
+      { alert
+        ( "Cannot encode: parallax = "
+        + parallax
+        + ", so longest possible foreground word must be "
+        + (parallax-6)
+        + " or fewer characters long.\n"
+        + "'"
+        + message[i][0]
+        + "' looks too long, at "
+        + message[i][0].length
+        + " characters."
+        );
         break;
       }
-      do {
-        var leftLen  = irand(1, parallax - message[i][0].length - 5);
-        var rightLen = parallax - message[i][0].length - leftLen - 4;
-      } while(!(leftpairs[leftLen]!=null && rightpairs[rightLen]!=null));
-      var left     = arand(leftpairs[leftLen]);
-      var right    = arand(rightpairs[rightLen]);
-      var str1     = left[0] +" "+ message[i][0] +" "+ right[1] +" ";
-      var str2     = left[1] +" "+ message[i][0] +" "+ right[0] +" ";
+      let leftLen;
+      let rightLen;
+      do
+      { leftLen  = irand(1, parallax - message[i][0].length - 5);
+        rightLen = parallax - message[i][0].length - leftLen - 4;
+      }
+      while(!(leftpairs[leftLen]!=null && rightpairs[rightLen]!=null));
+      let left     = arand(leftpairs[leftLen]);
+      let right    = arand(rightpairs[rightLen]);
+      let str1     = left[0] +" "+ message[i][0] +" "+ right[1] +" ";
+      let str2     = left[1] +" "+ message[i][0] +" "+ right[0] +" ";
 
       rowStuff = [leftLen - message[i][1]%parallax + parallax, str1, message[i][1] - leftLen, str2];
     }
 
 //  output += "("+ rowStuff[0] +") ";
     for(j=0; j<79; j++)
-    {
-      var str = (j>=rowStuff[2])?rowStuff[1]:rowStuff[3];
+    { let str = (j>=rowStuff[2])?rowStuff[1]:rowStuff[3];
 //      if(j==rowStuff[2]) { output += "\u25A0"; }
       output += str[(j+rowStuff[0])%parallax];
     }
@@ -137,9 +139,8 @@ p {padding: 0; margin: 0; }
     <div id='output'></div>
     <form name='aFrm' id='aFrm' action="javascript:render(); void(0); //" method="get">
 <script>
-for(var i=0; i<23; i++)
-{
-  document.writeln("<p><input type='text' maxlength='2' class='offset' name='offset"+ i +"' value='"+ message[i][1] +"'> "+
+for(let i=0; i<23; i++)
+{ document.writeln("<p><input type='text' maxlength='2' class='offset' name='offset"+ i +"' value='"+ message[i][1] +"'> "+
       "<input type='text' maxlength='9' class='message' name='message"+ i +"' value='"+ message[i][0] +"'></p>");
 }
 </script>
